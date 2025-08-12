@@ -4,7 +4,7 @@ local Settings = {
     Mode = "Randomize",
     IsDrawing = false,
     Size = 1,
-    Brush = "Normal"
+    Brush = "Stripes"
 }
 
 -- Services
@@ -13,7 +13,7 @@ local HttpService = game:GetService("HttpService")
 local StarterGui = game:GetService("StarterGui")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- Variables
+-- Varriables
 local LocalPlayer = Players.LocalPlayer
 local MainGui = LocalPlayer.PlayerGui.MainGui
 local identified = identifyexecutor()
@@ -22,9 +22,11 @@ local Brushes = {"Normal", "Star", "Circle", "Diamond", "Moon", "Asterisk", "Str
 
 function GetGrid()
     local Grid = MainGui:FindFirstChild("PaintFrame"):FindFirstChild("Grid")
+
     if not Grid then
         Grid = MainGui:FindFirstChild("PaintFrame"):FindFirstChild("GridHolder"):FindFirstChild("Grid")
     end
+
     return Grid
 end
 
@@ -44,7 +46,7 @@ function GetJson(url)
         SendNotify("Server Error | 502", "The server may have gone down unexpectedly. Report to discord.gg/HjKDVu2rAH - I'll fix it as soon as possible.")
         return {}
     elseif string.find(Response, "Bad Request") or string.find(Response, "undefined is not an object") then
-        SendNotify("Invalid URL", "The link provided is incorrect. discord.gg/HjKDVu2rAH to get help on how to get correct links.")
+        SendNotify("Invalid URL", "The link provided is incorrect. discord.gg/HjKDVu2rAH to get help how get correct links.")
         return {}
     end
 
@@ -66,19 +68,22 @@ function Import(url)
 
         if Settings.Mode == "Randomize" then
             pixelIndex = math.random(#pixels)
+            
             while usedIndices[pixelIndex] do
                 pixelIndex = math.random(#pixels)
             end
+            
             usedIndices[pixelIndex] = true
         end
-
+        
         local pixel = pixels[pixelIndex]
         local r, g, b = pixel[1], pixel[2], pixel[3]
-
+    
         if Settings.Brush == "Normal" then
             Grid[tostring(pixelIndex)].BackgroundColor3 = Color3.fromRGB(r, g, b)
         else
             local Brush
+
             if Settings.Brush == "Random" then
                 Brush = ReplicatedStorage.Brushes[Brushes[math.random(2, 16)]]:Clone()
             else
@@ -100,56 +105,44 @@ end
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/bloodball/-back-ups-for-libs/main/wally2", true))()
 local Window = Library:CreateWindow("Starving Arts")
 
--- UI Section for Image Settings
-Window:Section("🎨 Image Settings", {icon = "rbxassetid://1234567890"})  -- Remplacez l'ID par un vrai pour l'icône
-Window:Box("Image URL", {}, function(value) 
-    task.spawn(function()
-        Settings.Image = value
-    end)
-end)
+Window:Section("Lunamoon")
 
-Window:Dropdown("🖌️ Draw Mode", {list = { "Randomize", "By Step" } }, function(var) 
-    task.spawn(function()
-        Settings.Mode = var
-    end)
-end)
-
-Window:Dropdown("🔲 Brushes", {list = Brushes }, function(var) 
-    task.spawn(function()
-        Settings.Brush = var
-    end)
-end)
-
-Window:Slider("📏 Brush Size", {min = 1, max = 5}, function(value)
-    task.spawn(function()
-        Settings.Size = value
-    end)
-end)
-
--- Section for Actions with some stylized buttons
-Window:Section("🔧 Actions", {icon = "rbxassetid://1234567890"})  -- Remplacez l'ID par un vrai pour l'icône
-Window:Button("✨ Draw Image", {color = Color3.fromRGB(34, 34, 34)}, function()
+Window:Button("Draw", function()
     task.spawn(function()
         Import(Settings.Image)
     end)
 end)
 
-Window:Button("🎨 Change Brush", {color = Color3.fromRGB(42, 87, 179)}, function()
-    Window:Dropdown("Select Brush", {list = Brushes}, function(selectedBrush)
-        Settings.Brush = selectedBrush
-        SendNotify("Brush Changed", "Your brush has been changed to: " .. selectedBrush)
+Window:Box("Image URL", {}, function(value) 
+    task.spawn(function()
+        Settings.Image = value
+    end)
+end) 
+
+Window:Dropdown("Draw Mode", {list = { "Randomize", "By Step" } }, function(var) 
+    task.spawn(function()
+        Settings.Mode = var
     end)
 end)
 
-Window:Button("🎥 YouTube: EsohaSL", {color = Color3.fromRGB(255, 87, 34)}, function()
+Window:Dropdown("Brushes", {list = Brushes }, function(var) 
+    task.spawn(function()
+        Settings.Brush = var
+    end)
+end)
+
+Window:Slider("Brush Size", {min = 1, max = 5}, function(value)
+    task.spawn(function()
+        Settings.Size = value
+    end)
+  end)
+
+Window:Section("Wait few min before submit")
+
+Window:Button("YouTube: Lunamoon", function()
     task.spawn(function()
         if setclipboard then
-            setclipboard("https://www.youtube.com/@esohasl")
+            setclipboard("https://www.youtube.com")
         end
     end)
 end)
-
--- Section for Important Info
-Window:Section("⚠️ Important Information")
-Window:Label("Please wait a few minutes before submitting.")
-Window:Label("Ensure the image URL is valid before drawing.")
