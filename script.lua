@@ -40,13 +40,14 @@ end
 local Grid = GetGrid()
 
 function GetJson(url)
-    local Response = game:HttpGet(string.format("https://images.esohasl.net" .. "/?url=%s&executor=%s", url, string.gsub(identified, "%s+", "")))
+    local myVercelApp = "https://roblox-image-api-two.vercel.app/api"
+    
+    local success, Response = pcall(function()
+        return game:HttpGet(myVercelApp .. "?url=" .. url)
+    end)
 
-    if string.find(Response, "502") then
-        SendNotify("Server Error | 502", "The server may have gone down unexpectedly. Report to discord.gg/HjKDVu2rAH - I'll fix it as soon as possible.")
-        return {}
-    elseif string.find(Response, "Bad Request") or string.find(Response, "undefined is not an object") then
-        SendNotify("Invalid URL", "The link provided is incorrect. discord.gg/HjKDVu2rAH to get help how get correct links.")
+    if not success or string.find(Response, "error") then
+        SendNotify("Erreur API", "Impossible de contacter ton serveur Vercel.")
         return {}
     end
 
