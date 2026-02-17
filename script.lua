@@ -4,7 +4,7 @@ local Settings = {
     Mode = "Randomize",
     IsDrawing = false,
     Size = 1,
-    Brush = "Stripes"
+    Brush = "Normal"
 }
 
 -- Services
