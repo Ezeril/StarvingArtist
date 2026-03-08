@@ -1,6 +1,5 @@
 -- ============================================================
---  COMET HUB (Starving Arts) - Stable Edition v1.5
---  Anti-AFK & Branded Webhook Update
+--  COMET HUB (Starving Arts) - Stable Edition v1.7
 -- ============================================================
 
 if game.CoreGui:FindFirstChild("CometHub") then
@@ -38,8 +37,98 @@ local VirtualUser = game:GetService("VirtualUser")
 local player = Players.LocalPlayer
 local MainGui = player:WaitForChild("PlayerGui"):WaitForChild("MainGui")
 
--- Your Master Discord Webhook (For Executions)
 local WEBHOOK_URL = "https://discord.com/api/webhooks/1477453195415388301/_RFMLt_uyr2rDUqXqYlSW_F-pOO_JbZerLYwT7B4vvB6BaYY-rT4dzO9O8KD2d38XB3M"
+
+-- ============================================================
+--  PRECISE DONOR TRACKING SYSTEM
+-- ============================================================
+local lastDetectedDonor = "Unknown Donor"
+
+task.spawn(function()
+    local Remotes = ReplicatedStorage:WaitForChild("Remotes", 5)
+    if Remotes then
+        local tipJar = Remotes:FindFirstChild("TipJar")
+        if tipJar then
+            tipJar.OnClientEvent:Connect(function(donorName, amount)
+                if type(donorName) == "string" then
+                    lastDetectedDonor = donorName
+                end
+            end)
+        end
+
+        local notify = Remotes:FindFirstChild("Notify")
+        if notify then
+            notify.OnClientEvent:Connect(function(arg1, arg2, arg3)
+                if arg1 == "Donation" and type(arg2) == "string" then
+                    lastDetectedDonor = arg2
+                end
+            end)
+        end
+    end
+end)
+
+local function sendDonationWebhook(donorName, amount, total, currencyName)
+    local req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
+    if not req or Settings.UserWebhook == "" then return end
+
+    local avatarUrl = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. player.UserId .. "&width=150&height=150&format=png"
+
+    local data = {
+        ["username"] = "Comet Hub Tracker",
+        ["avatar_url"] = "https://i.imgur.com/AO78ACk.png", 
+        ["embeds"] = {{
+            ["author"] = {
+                ["name"] = "Comet Hub Official",
+                ["icon_url"] = "https://i.imgur.com/AO78ACk.png" 
+            },
+            ["title"] = "🎉 New Donation Received! 🎉",
+            ["description"] = "Congratulations **" .. player.Name .. "**! You just received a donation in Starving Arts.",
+            ["color"] = 16777215,
+            ["thumbnail"] = { ["url"] = avatarUrl },
+            ["fields"] = {
+                {["name"] = "👤 Donor", ["value"] = "```diff\n- " .. donorName .. "\n```", ["inline"] = false},
+                {["name"] = "💸 Amount Received", ["value"] = "```diff\n+ " .. tostring(amount) .. " " .. currencyName .. "\n```", ["inline"] = true},
+                {["name"] = "💰 New Balance", ["value"] = "```fix\n" .. tostring(total) .. " " .. currencyName .. "\n```", ["inline"] = true}
+            },
+            ["footer"] = {
+                ["text"] = "🔒 Secured & Powered by Comet Hub",
+                ["icon_url"] = "https://i.imgur.com/AO78ACk.png"
+            },
+            ["timestamp"] = DateTime.now():ToIsoDate()
+        }}
+    }
+
+    pcall(function()
+        req({
+            Url = Settings.UserWebhook,
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
+            Body = HttpService:JSONEncode(data)
+        })
+    end)
+end
+
+task.spawn(function()
+    local leaderstats = player:WaitForChild("leaderstats", 15)
+    if leaderstats then
+        for _, stat in pairs(leaderstats:GetChildren()) do
+            if stat:IsA("IntValue") or stat:IsA("NumberValue") then
+                local oldValue = stat.Value
+                stat.Changed:Connect(function(newValue)
+                    if Settings.DonationNotifs and newValue > oldValue then
+                        local amount = newValue - oldValue
+                        
+                        local finalDonorName = lastDetectedDonor
+                        sendDonationWebhook(finalDonorName, amount, newValue, stat.Name)
+                        
+                        lastDetectedDonor = "Unknown Donor"
+                    end
+                    oldValue = newValue
+                end)
+            end
+        end
+    end
+end)
 
 -- ============================================================
 --  CORE FUNCTIONS
@@ -69,73 +158,12 @@ function GetJson(url)
     return HttpService:JSONDecode(Response)
 end
 
--- Anti-AFK Logic
 player.Idled:Connect(function()
     if Settings.AntiAFK then
         pcall(function()
             VirtualUser:CaptureController()
             VirtualUser:ClickButton2(Vector2.new())
         end)
-    end
-end)
-
--- User Donation Webhook Logic (Branded)
-local function sendDonationWebhook(amount, total, currencyName)
-    local req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
-    if not req or Settings.UserWebhook == "" then return end
-
-    local avatarUrl = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. player.UserId .. "&width=150&height=150&format=png"
-
-    local data = {
-        ["username"] = "Comet Hub Tracker",
-        ["avatar_url"] = "https://tr.rbxcdn.com/131711664935136/150/150/Image/Png",
-        ["embeds"] = {{
-            ["author"] = {
-                ["name"] = "Comet Hub Official",
-                ["icon_url"] = "https://tr.rbxcdn.com/131711664935136/150/150/Image/Png"
-            },
-            ["title"] = "🎉 New Donation Received! 🎉",
-            ["description"] = "Congratulations **" .. player.Name .. "**! You just earned some art coins in Starving Arts.",
-            ["color"] = 11141375, -- Comet Purple
-            ["thumbnail"] = { ["url"] = avatarUrl },
-            ["fields"] = {
-                {["name"] = "💸 Amount Received", ["value"] = "```diff\n+ " .. tostring(amount) .. " " .. currencyName .. "\n```", ["inline"] = true},
-                {["name"] = "💰 New Balance", ["value"] = "```fix\n" .. tostring(total) .. " " .. currencyName .. "\n```", ["inline"] = true}
-            },
-            ["footer"] = {
-                ["text"] = "🔒 Secured & Powered by Comet Hub • noxis.lua",
-                ["icon_url"] = "https://tr.rbxcdn.com/131711664935136/150/150/Image/Png"
-            },
-            ["timestamp"] = DateTime.now():ToIsoDate()
-        }}
-    }
-
-    pcall(function()
-        req({
-            Url = Settings.UserWebhook,
-            Method = "POST",
-            Headers = {["Content-Type"] = "application/json"},
-            Body = HttpService:JSONEncode(data)
-        })
-    end)
-end
-
--- Leaderstats Tracker
-task.spawn(function()
-    local leaderstats = player:WaitForChild("leaderstats", 15)
-    if leaderstats then
-        for _, stat in pairs(leaderstats:GetChildren()) do
-            if stat:IsA("IntValue") or stat:IsA("NumberValue") then
-                local oldValue = stat.Value
-                stat.Changed:Connect(function(newValue)
-                    if Settings.DonationNotifs and newValue > oldValue then
-                        local amount = newValue - oldValue
-                        sendDonationWebhook(amount, newValue, stat.Name)
-                    end
-                    oldValue = newValue
-                end)
-            end
-        end
     end
 end)
 
@@ -330,7 +358,7 @@ local SideList = Instance.new("UIListLayout", Sidebar)
 SideList.Padding = UDim.new(0, 4); SideList.SortOrder = Enum.SortOrder.LayoutOrder; SideList.HorizontalAlignment = Enum.HorizontalAlignment.Center; applyPadding(Sidebar, 12, 12, 8, 8)
 
 local SideVer = Instance.new("TextLabel", Sidebar)
-SideVer.Size = UDim2.new(1, 0, 0, 14); SideVer.BackgroundTransparency = 1; SideVer.Text = "v1.5"
+SideVer.Size = UDim2.new(1, 0, 0, 14); SideVer.BackgroundTransparency = 1; SideVer.Text = "v1.7"
 SideVer.TextColor3 = C.subtext; SideVer.Font = Enum.Font.Gotham; SideVer.TextSize = 10; SideVer.TextXAlignment = Enum.TextXAlignment.Center; SideVer.LayoutOrder = 999
 
 local Content = Instance.new("Frame", Body)
@@ -378,7 +406,6 @@ local drawPage = tabs["Drawing"].page
 local settingsPage = tabs["Settings"].page
 local infoPage = tabs["Info"].page
 
--- UI Components Builder
 local function sectionLabel(parent, text, order)
     local f = Instance.new("Frame", parent)
     f.LayoutOrder = order or 0; f.Size = UDim2.new(1, 0, 0, 22); f.BackgroundTransparency = 1
@@ -481,7 +508,7 @@ end
 
 local function makePresetsRow(parent, order, presets, applyFn)
     local row = Instance.new("Frame", parent)
-    row.LayoutOrder = order; row.Size = UDim2.new(1, 0, 0, 38); row.BackgroundTransparency = 1
+    row.LayoutOrder = order; row.Size = UDim2.new(1, 0, 0, 38) row.BackgroundTransparency = 1
 
     local grid = Instance.new("UIGridLayout", row)
     grid.CellSize = UDim2.new(0, 75, 0, 34); grid.CellPadding = UDim2.new(0, 5, 0, 0)
@@ -507,7 +534,6 @@ end
 --  POPULATING THE PAGES
 -- ============================================================
 
--- DRAWING PAGE
 sectionLabel(drawPage, "WEB IMPORT", 1)
 local imageInput = makeInput(drawPage, "Paste Image URL Here...", 2, function(val) Settings.Image = val end)
 
@@ -518,7 +544,6 @@ makeActionBtn(drawPage, "Stop Drawing", 5, Color3.fromRGB(150, 40, 40), function
     if Settings.IsDrawing then Settings.CancelDrawing = true else SendNotify("Comet Hub", "No drawing in progress.") end
 end)
 
--- SETTINGS PAGE
 sectionLabel(settingsPage, "DRAW MODE", 1)
 makeDropdown(settingsPage, "Mode: ", Modes, Settings.Mode, 2, function(val) Settings.Mode = val end)
 
@@ -536,16 +561,15 @@ sectionLabel(settingsPage, "DONATION WEBHOOK", 10)
 makeInput(settingsPage, "Paste Discord Webhook URL...", 11, function(val) Settings.UserWebhook = val end)
 makeToggle(settingsPage, "Enable Notifications", 12, Settings.DonationNotifs, function(val) Settings.DonationNotifs = val end)
 makeActionBtn(settingsPage, "Test Webhook", 13, function()
-    if Settings.UserWebhook ~= "" then sendDonationWebhook("1,000", "5,000", "TestCoins")
+    if Settings.UserWebhook ~= "" then sendDonationWebhook("Comet Hub Tester", "1,000", "5,000", "TestCoins")
     else SendNotify("Error", "Please enter a valid webhook URL first.") end
 end)
 
-sectionLabel(settingsPage, "MISCELLANEOUS", 14)
+sectionLabel(settingsPage, "SUPPORT", 14)
 makeActionBtn(settingsPage, "Join Discord Server", 15, function()
     if setclipboard then setclipboard("https://discord.com/invite/NkYSkdAkey"); SendNotify("Comet Hub", "Discord link copied to clipboard!") end
 end)
 
--- INFO PAGE
 local function infoCard(parent, order, key, value)
     local card = Instance.new("Frame", parent); card.LayoutOrder = order; card.Size = UDim2.new(1, 0, 0, 52); card.BackgroundColor3 = C.card
     corner(card, 9); stroke(card, C.divider, 1)
@@ -562,7 +586,7 @@ end
 
 sectionLabel(infoPage, "SCRIPT", 0)
 infoCard(infoPage, 1, "Game", "Starving Arts")
-infoCard(infoPage, 2, "Version", "v1.5")
+infoCard(infoPage, 2, "Version", "v1.7")
 infoCard(infoPage, 3, "Hub", "Comet Hub")
 infoCard(infoPage, 4, "Credits", "noxis.lua")
 sectionLabel(infoPage, "SUPPORT", 10)
@@ -613,7 +637,7 @@ local BarFill = Instance.new("Frame", BarBG)
 BarFill.Size = UDim2.new(0, 0, 1, 0); BarFill.BackgroundColor3 = C.white; corner(BarFill, 4)
 
 task.spawn(function()
-    if WEBHOOK_URL and WEBHOOK_URL ~= "https://discord.com/api/webhooks/1480223853556011053/yXYkyDfZRHBdnmxCy67WNbJ8IpDO5jq6DpGHrwSH8TXZWiqQoajvnpHMJ8NdxDz_BFSM" then
+    if WEBHOOK_URL and WEBHOOK_URL ~= "https://discord.com/api/webhooks/1480256790770749595/iFK8LcyiqcdEmNBOqz-yjd8miQog1cJVK3Ubdo8BKVOPqP3bc5qog_jHGjxOa9eRLa09" then
         task.spawn(function()
             local req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
             if req then
