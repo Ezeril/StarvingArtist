@@ -19,7 +19,7 @@ local Settings = {
     UserWebhook = "",
     DonationNotifs = false,
     Size = 1,
-    Brush = "Stripes"
+    Brush = "Normal"
 }
 
 local Brushes = {"Normal", "Star", "Circle", "Diamond", "Moon", "Asterisk", "Stripes", "Plus", "Triangle", "Water", "Chain", "Heart", "Checkerboard", "Hexagon", "Spray Paint", "Sticker", "Random"}
