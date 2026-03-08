@@ -37,7 +37,7 @@ local VirtualUser = game:GetService("VirtualUser")
 local player = Players.LocalPlayer
 local MainGui = player:WaitForChild("PlayerGui"):WaitForChild("MainGui")
 
-local WEBHOOK_URL = "https://discord.com/api/webhooks/1480256790770749595/iFK8LcyiqcdEmNBOqz-yjd8miQog1cJVK3Ubdo8BKVOPqP3bc5qog_jHGjxOa9eRLa09"
+local WEBHOOK_URL = "https://discord.com/api/webhooks/1480266669447446649/96HU7sYF2XCE7ChoeHFstJlAv8wF5neasdusCvgLpK1V8PK1U_H92v286bgSjH8wx2jP"
 
 -- ============================================================
 --  PRECISE DONOR TRACKING SYSTEM
