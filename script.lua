@@ -1,5 +1,6 @@
 -- ============================================================
---  COMET HUB (Starving Arts) - Ultimate Edition v1.3
+--  COMET HUB (Starving Arts) - Ultimate Edition v1.3.1
+--  Museum Cloner Bypass Update
 -- ============================================================
 
 if game.CoreGui:FindFirstChild("CometHub") then
@@ -15,7 +16,7 @@ local Settings = {
     Mode = "Randomize",
     IsDrawing = false,
     CancelDrawing = false,
-    SkipWhite = false, -- Nouvelle fonctionnalité !
+    SkipWhite = false, 
     Size = 1,
     Brush = "Stripes"
 }
@@ -69,42 +70,70 @@ function GetJson(url)
     return HttpService:JSONDecode(Response)
 end
 
--- Fonction pour lire une toile existante dans le musée
+-- ============================================================
+--  MUSEUM SCANNER BYPASS
+-- ============================================================
+
+function GetAvailableMuseumCanvases()
+    local list = {}
+    local museum = workspace:FindFirstChild("MuseumCanvases")
+    if museum then
+        for _, child in pairs(museum:GetChildren()) do
+            -- Recherche profonde pour contourner toute modification de hiérarchie
+            local hasGrid = false
+            for _, desc in pairs(child:GetDescendants()) do
+                if desc.Name == "Grid" and desc:IsA("Frame") then
+                    hasGrid = true
+                    break
+                end
+            end
+            if hasGrid then
+                table.insert(list, child.Name)
+            end
+        end
+    end
+    if #list == 0 then table.insert(list, "None") end
+    return list
+end
+
 function ScanMuseumCanvas(canvasName)
     local museum = workspace:FindFirstChild("MuseumCanvases")
     if not museum then return {} end
-    
+
     local target = museum:FindFirstChild(canvasName)
     if not target then return {} end
 
-    local targetGrid = target:FindFirstChild("Canvas") 
-        and target.Canvas:FindFirstChild("SurfaceGui") 
-        and target.Canvas.SurfaceGui:FindFirstChild("Grid")
+    -- Recherche profonde du Grid, peu importe s'il est caché dans un MeshPart, un Folder, etc.
+    local targetGrid = nil
+    for _, desc in pairs(target:GetDescendants()) do
+        if desc.Name == "Grid" and desc:IsA("Frame") then
+            targetGrid = desc
+            break
+        end
+    end
 
     if not targetGrid then
         SendNotify("Error", "Could not find Grid inside " .. canvasName)
         return {}
     end
 
+    -- Trouve le nombre maximum de pixels (ex: 1024 pour du 32x32)
     local maxPixels = 0
     for _, child in pairs(targetGrid:GetChildren()) do
-        if tonumber(child.Name) then
-            maxPixels = math.max(maxPixels, tonumber(child.Name))
+        local num = tonumber(child.Name)
+        if num then
+            maxPixels = math.max(maxPixels, num)
         end
     end
 
     local pixels = {}
     for i = 1, maxPixels do
         local cell = targetGrid:FindFirstChild(tostring(i))
-        local r, g, b = 255, 255, 255
-        
+        local r, g, b = 255, 255, 255 -- Blanc par défaut
+
         if cell then
-            local brushLabel = cell:FindFirstChildWhichIsA("ImageLabel")
-            if brushLabel then
-                r = math.floor(brushLabel.ImageColor3.R * 255)
-                g = math.floor(brushLabel.ImageColor3.G * 255)
-                b = math.floor(brushLabel.ImageColor3.B * 255)
-            else
+            -- Vérifie si la case a vraiment été peinte (transparence < 1)
+            if cell.BackgroundTransparency < 1 then
                 r = math.floor(cell.BackgroundColor3.R * 255)
                 g = math.floor(cell.BackgroundColor3.G * 255)
                 b = math.floor(cell.BackgroundColor3.B * 255)
@@ -116,19 +145,10 @@ function ScanMuseumCanvas(canvasName)
     return pixels
 end
 
-function GetAvailableMuseumCanvases()
-    local list = {}
-    local museum = workspace:FindFirstChild("MuseumCanvases")
-    if museum then
-        for _, child in pairs(museum:GetChildren()) do
-            table.insert(list, child.Name)
-        end
-    end
-    if #list == 0 then table.insert(list, "None") end
-    return list
-end
+-- ============================================================
+--  DRAWING CORE
+-- ============================================================
 
--- Fonction d'impression centrale
 function DrawPixelArray(pixels)
     local usedIndices = {}
     local Grid = GetGrid()
@@ -160,9 +180,9 @@ function DrawPixelArray(pixels)
         local pixel = pixels[pixelIndex]
         local r, g, b = pixel[1], pixel[2], pixel[3]
         
-        -- Feature: Skip White Background
+        -- Feature: Skip White Background (ignore les pixels très proches du blanc)
         if Settings.SkipWhite and r >= 250 and g >= 250 and b >= 250 then
-            continue -- Ignore ce pixel et passe au suivant instantanément
+            continue 
         end
 
         local targetCell = Grid[tostring(pixelIndex)]
@@ -677,8 +697,6 @@ local function makeDropdown(parent, prefixText, options, currentSelected, order,
         icon.Text = open and "▲" or "▼"
     end)
 
-    local optionButtons = {}
-    
     local function populateOptions(newOptions)
         for _, child in pairs(listFrame:GetChildren()) do
             if child:IsA("TextButton") then child:Destroy() end
@@ -764,7 +782,7 @@ end
 --  POPULATING THE PAGES
 -- ============================================================
 
--- DRAWING PAGE (Features)
+-- DRAWING PAGE
 sectionLabel(drawPage, "WEB IMPORT", 1)
 local imageInput = makeInput(drawPage, "Paste Image URL Here...", 2, function(val)
     Settings.Image = val
@@ -873,7 +891,7 @@ end
 
 sectionLabel(infoPage, "SCRIPT", 0)
 infoCard(infoPage, 1, "Game", "Starving Arts")
-infoCard(infoPage, 2, "Version", "v1.3")
+infoCard(infoPage, 2, "Version", "v1.3.1")
 infoCard(infoPage, 3, "Hub", "Comet Hub")
 infoCard(infoPage, 4, "Credits", "noxis.lua")
 
