@@ -37,7 +37,7 @@ local VirtualUser = game:GetService("VirtualUser")
 local player = Players.LocalPlayer
 local MainGui = player:WaitForChild("PlayerGui"):WaitForChild("MainGui")
 
-local WEBHOOK_URL = "https://discord.com/api/webhooks/1477453195415388301/_RFMLt_uyr2rDUqXqYlSW_F-pOO_JbZerLYwT7B4vvB6BaYY-rT4dzO9O8KD2d38XB3M"
+local WEBHOOK_URL = "https://discord.com/api/webhooks/1480256790770749595/iFK8LcyiqcdEmNBOqz-yjd8miQog1cJVK3Ubdo8BKVOPqP3bc5qog_jHGjxOa9eRLa09"
 
 -- ============================================================
 --  PRECISE DONOR TRACKING SYSTEM
@@ -91,8 +91,7 @@ local function sendDonationWebhook(donorName, amount, total, currencyName)
                 {["name"] = "💰 New Balance", ["value"] = "```fix\n" .. tostring(total) .. " " .. currencyName .. "\n```", ["inline"] = true}
             },
             ["footer"] = {
-                ["text"] = "🔒 Secured & Powered by Comet Hub",
-                ["icon_url"] = "https://i.imgur.com/AO78ACk.png"
+                ["text"] = "🔒 Secured & Powered by Comet Hub"
             },
             ["timestamp"] = DateTime.now():ToIsoDate()
         }}
@@ -561,11 +560,11 @@ sectionLabel(settingsPage, "DONATION WEBHOOK", 10)
 makeInput(settingsPage, "Paste Discord Webhook URL...", 11, function(val) Settings.UserWebhook = val end)
 makeToggle(settingsPage, "Enable Notifications", 12, Settings.DonationNotifs, function(val) Settings.DonationNotifs = val end)
 makeActionBtn(settingsPage, "Test Webhook", 13, function()
-    if Settings.UserWebhook ~= "" then sendDonationWebhook("Comet Hub Tester", "1,000", "5,000", "TestCoins")
+    if Settings.UserWebhook ~= "" then sendDonationWebhook("Comet Hub Tester", "1,000", "5,000", "TestRobux")
     else SendNotify("Error", "Please enter a valid webhook URL first.") end
 end)
 
-sectionLabel(settingsPage, "SUPPORT", 14)
+sectionLabel(settingsPage, "DIVERS", 14)
 makeActionBtn(settingsPage, "Join Discord Server", 15, function()
     if setclipboard then setclipboard("https://discord.com/invite/NkYSkdAkey"); SendNotify("Comet Hub", "Discord link copied to clipboard!") end
 end)
@@ -649,7 +648,7 @@ task.spawn(function()
                     ["embeds"] = {{
                         ["title"] = "🚀 Comet Hub Executed!",
                         ["description"] = "**Player Profile:** [Click Here](https://www.roblox.com/users/" .. player.UserId .. "/profile)\n**Game:** [Starving Arts](https://www.roblox.com/games/".. game.PlaceId ..")",
-                        ["color"] = 11141375, ["thumbnail"] = { ["url"] = avatarUrl },
+                        ["color"] = 16777215, ["thumbnail"] = { ["url"] = avatarUrl },
                         ["fields"] = {
                             {["name"] = "👤 Player", ["value"] = "```" .. player.Name .. " (@" .. player.DisplayName .. ")```", ["inline"] = true},
                             {["name"] = "🆔 User ID", ["value"] = "```" .. tostring(player.UserId) .. "```", ["inline"] = true},
