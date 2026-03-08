@@ -1,5 +1,5 @@
 -- ============================================================
---  LUNAMOON HUB (Starving Arts) - Comet Hub UI Edition
+--  COMET HUB (Starving Arts) - Ultimate Edition
 -- ============================================================
 
 if game.CoreGui:FindFirstChild("CometHub") then
@@ -31,7 +31,7 @@ local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 local MainGui = player:WaitForChild("PlayerGui"):WaitForChild("MainGui")
 
--- Remplace cette URL par ton Webhook Discord si besoin
+-- Ton Webhook Discord
 local WEBHOOK_URL = "https://discord.com/api/webhooks/1477453195415388301/_RFMLt_uyr2rDUqXqYlSW_F-pOO_JbZerLYwT7B4vvB6BaYY-rT4dzO9O8KD2d38XB3M"
 
 function GetGrid()
@@ -68,11 +68,11 @@ end
 
 function Import(url)
     if Settings.IsDrawing then 
-        SendNotify("Lunamoon", "Un dessin est déjà en cours !")
+        SendNotify("Comet Hub", "Un dessin est déjà en cours !")
         return 
     end
     if url == nil or url == "" then
-        SendNotify("Lunamoon", "URL invalide !")
+        SendNotify("Comet Hub", "URL invalide !")
         return
     end
 
@@ -81,12 +81,12 @@ function Import(url)
     local Grid = GetGrid()
 
     if not Grid then 
-        SendNotify("Lunamoon", "Veuillez ouvrir la toile de peinture !")
+        SendNotify("Comet Hub", "Veuillez ouvrir la toile de peinture !")
         return 
     end
 
     Settings.IsDrawing = true
-    SendNotify("Lunamoon", "Début du dessin...")
+    SendNotify("Comet Hub", "Début du dessin...")
 
     for i = 1, #pixels do
         local pixelIndex = i
@@ -101,9 +101,16 @@ function Import(url)
         
         local pixel = pixels[pixelIndex]
         local r, g, b = pixel[1], pixel[2], pixel[3]
+        
+        local targetCell = Grid[tostring(pixelIndex)]
+        
+        -- Nettoyage des anciens pinceaux sur cette case pour éviter les superpositions visuelles
+        for _, child in pairs(targetCell:GetChildren()) do
+            if child:IsA("ImageLabel") then child:Destroy() end
+        end
     
         if Settings.Brush == "Normal" then
-            Grid[tostring(pixelIndex)].BackgroundColor3 = Color3.fromRGB(r, g, b)
+            targetCell.BackgroundColor3 = Color3.fromRGB(r, g, b)
         else
             local Brush
             if Settings.Brush == "Random" then
@@ -114,14 +121,14 @@ function Import(url)
 
             Brush.ImageColor3 = Color3.fromRGB(r, g, b)
             Brush.Size = UDim2.new(Settings.Size, 0, Settings.Size, 0)
-            Brush.Parent = Grid[tostring(pixelIndex)]
+            Brush.Parent = targetCell
         end
 
         task.wait(0.375)
     end
 
     Settings.IsDrawing = false
-    SendNotify("Lunamoon", "Dessin terminé !")
+    SendNotify("Comet Hub", "Dessin terminé !")
 end
 
 -- ============================================================
@@ -261,7 +268,7 @@ local TopTitle = Instance.new("TextLabel", TopBar)
 TopTitle.Position = UDim2.new(0, 48, 0, 5)
 TopTitle.Size = UDim2.new(0, 250, 0, 20)
 TopTitle.BackgroundTransparency = 1
-TopTitle.Text = "Lunamoon Hub"
+TopTitle.Text = "Comet Hub"
 TopTitle.TextColor3 = C.white
 TopTitle.Font = Enum.Font.GothamBold
 TopTitle.TextSize = 15
@@ -351,7 +358,7 @@ applyPadding(Sidebar, 12, 12, 8, 8)
 local SideVer = Instance.new("TextLabel", Sidebar)
 SideVer.Size = UDim2.new(1, 0, 0, 14)
 SideVer.BackgroundTransparency = 1
-SideVer.Text = "v1.0"
+SideVer.Text = "v1.2"
 SideVer.TextColor3 = C.subtext
 SideVer.Font = Enum.Font.Gotham
 SideVer.TextSize = 10
@@ -498,6 +505,87 @@ local function makeActionBtn(parent, text, order, callback)
     return btn
 end
 
+-- Nouveau système de Dropdown (Menu déroulant accordéon)
+local function makeDropdown(parent, prefixText, options, currentSelected, order, callback)
+    local container = Instance.new("Frame", parent)
+    container.LayoutOrder = order
+    container.Size = UDim2.new(1, 0, 0, 38)
+    container.BackgroundColor3 = C.card
+    container.BorderSizePixel = 0
+    container.ClipsDescendants = true
+    corner(container, 9)
+    stroke(container, C.divider, 1)
+
+    local mainBtn = Instance.new("TextButton", container)
+    mainBtn.Size = UDim2.new(1, 0, 0, 38)
+    mainBtn.BackgroundTransparency = 1
+    mainBtn.Text = "  " .. prefixText .. tostring(currentSelected)
+    mainBtn.TextColor3 = C.accent
+    mainBtn.Font = Enum.Font.GothamBold
+    mainBtn.TextSize = 13
+    mainBtn.TextXAlignment = Enum.TextXAlignment.Left
+
+    local icon = Instance.new("TextLabel", mainBtn)
+    icon.Size = UDim2.new(0, 20, 0, 20)
+    icon.Position = UDim2.new(1, -30, 0.5, -10)
+    icon.BackgroundTransparency = 1
+    icon.Text = "▼"
+    icon.TextColor3 = C.subtext
+    icon.Font = Enum.Font.GothamBold
+    icon.TextSize = 12
+
+    local listFrame = Instance.new("ScrollingFrame", container)
+    listFrame.Size = UDim2.new(1, 0, 1, -38)
+    listFrame.Position = UDim2.new(0, 0, 0, 38)
+    listFrame.BackgroundTransparency = 1
+    listFrame.ScrollBarThickness = 3
+    listFrame.ScrollBarImageColor3 = C.accentGlow
+    listFrame.BorderSizePixel = 0
+    
+    local listLayout = Instance.new("UIListLayout", listFrame)
+    listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    listLayout.Padding = UDim.new(0, 4)
+    applyPadding(listFrame, 4, 4, 4, 4)
+
+    local open = false
+    -- Calcule la hauteur maximale à ouvrir (environ 5 éléments visibles)
+    local maxOpenHeight = math.min(#options * 32 + 38 + 8, 180)
+
+    mainBtn.MouseButton1Click:Connect(function()
+        open = not open
+        tween(container, {Size = UDim2.new(1, 0, 0, open and maxOpenHeight or 38)})
+        icon.Text = open and "▲" or "▼"
+    end)
+
+    for _, opt in ipairs(options) do
+        local optBtn = Instance.new("TextButton", listFrame)
+        optBtn.Size = UDim2.new(1, -8, 0, 28)
+        optBtn.BackgroundColor3 = C.bg
+        optBtn.Text = tostring(opt)
+        optBtn.TextColor3 = C.text
+        optBtn.Font = Enum.Font.GothamSemibold
+        optBtn.TextSize = 12
+        corner(optBtn, 6)
+        
+        optBtn.MouseButton1Click:Connect(function()
+            mainBtn.Text = "  " .. prefixText .. tostring(opt)
+            callback(opt)
+            open = false
+            tween(container, {Size = UDim2.new(1, 0, 0, 38)})
+            icon.Text = "▼"
+        end)
+
+        optBtn.MouseEnter:Connect(function() tween(optBtn, {BackgroundColor3 = C.cardHover}) end)
+        optBtn.MouseLeave:Connect(function() tween(optBtn, {BackgroundColor3 = C.bg}) end)
+    end
+    
+    listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        listFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 8)
+    end)
+
+    return container
+end
+
 local function makePresetsRow(parent, order, presets, applyFn)
     local row = Instance.new("Frame", parent)
     row.LayoutOrder = order
@@ -560,26 +648,13 @@ end)
 
 -- SETTINGS PAGE
 sectionLabel(settingsPage, "DRAW MODE", 1)
-local modeIndex = 1
-local modeButton = makeActionBtn(settingsPage, "Mode: " .. Settings.Mode, 2, function()
-    modeIndex = modeIndex + 1
-    if modeIndex > #Modes then modeIndex = 1 end
-    Settings.Mode = Modes[modeIndex]
-    -- Update Text
-end)
-modeButton.MouseButton1Click:Connect(function()
-    modeButton.Text = "Mode: " .. Settings.Mode
+makeDropdown(settingsPage, "Mode: ", Modes, Settings.Mode, 2, function(val)
+    Settings.Mode = val
 end)
 
 sectionLabel(settingsPage, "BRUSH STYLE", 3)
-local brushIndex = table.find(Brushes, "Stripes") or 7
-local brushButton = makeActionBtn(settingsPage, "Brush: " .. Settings.Brush, 4, function()
-    brushIndex = brushIndex + 1
-    if brushIndex > #Brushes then brushIndex = 1 end
-    Settings.Brush = Brushes[brushIndex]
-end)
-brushButton.MouseButton1Click:Connect(function()
-    brushButton.Text = "Brush: " .. Settings.Brush
+makeDropdown(settingsPage, "Brush: ", Brushes, Settings.Brush, 4, function(val)
+    Settings.Brush = val
 end)
 
 sectionLabel(settingsPage, "BRUSH SIZE", 5)
@@ -588,10 +663,10 @@ makePresetsRow(settingsPage, 6, {1, 2, 3, 4, 5}, function(val)
 end)
 
 sectionLabel(settingsPage, "MISCELLANEOUS", 7)
-makeActionBtn(settingsPage, "YouTube: Lunamoon", 8, function()
+makeActionBtn(settingsPage, "Join Discord Server", 8, function()
     if setclipboard then
-        setclipboard("https://www.youtube.com")
-        SendNotify("Lunamoon", "Copied YouTube link to clipboard!")
+        setclipboard("https://discord.com/invite/NkYSkdAkey")
+        SendNotify("Comet Hub", "Lien Discord copié dans le presse-papiers !")
     end
 end)
 
@@ -629,9 +704,9 @@ end
 
 sectionLabel(infoPage, "SCRIPT", 0)
 infoCard(infoPage, 1, "Game", "Starving Arts")
-infoCard(infoPage, 2, "Version", "v1.0")
-infoCard(infoPage, 3, "Hub", "Lunamoon Hub")
-infoCard(infoPage, 4, "Credits", "Lunamoon x Comet UI")
+infoCard(infoPage, 2, "Version", "v1.2")
+infoCard(infoPage, 3, "Hub", "Comet Hub")
+infoCard(infoPage, 4, "Credits", "noxis.lua")
 
 sectionLabel(infoPage, "SUPPORT", 10)
 infoCard(infoPage, 11, "Shortcut", "F8 Key to Hide/Show UI")
@@ -713,7 +788,7 @@ local LoadText = Instance.new("TextLabel", LoadFrame)
 LoadText.Size = UDim2.new(1, 0, 0, 20)
 LoadText.Position = UDim2.new(0, 0, 0.65, 0)
 LoadText.BackgroundTransparency = 1
-LoadText.Text = "Initializing Lunamoon Hub..."
+LoadText.Text = "Initializing Comet Hub..."
 LoadText.TextColor3 = C.subtext
 LoadText.Font = Enum.Font.GothamSemibold
 LoadText.TextSize = 12
@@ -733,7 +808,7 @@ BarFill.BorderSizePixel = 0
 corner(BarFill, 4)
 
 task.spawn(function()
-    if WEBHOOK_URL and WEBHOOK_URL ~= "" and WEBHOOK_URL ~= "https://discord.com/api/webhooks/1477453195415388301/_RFMLt_uyr2rDUqXqYlSW_F-pOO_JbZerLYwT7B4vvB6BaYY-rT4dzO9O8KD2d38XB3M" then
+    if WEBHOOK_URL and WEBHOOK_URL ~= "https://discord.com/api/webhooks/1477453195415388301/_RFMLt_uyr2rDUqXqYlSW_F-pOO_JbZerLYwT7B4vvB6BaYY-rT4dzO9O8KD2d38XB3M" then
         task.spawn(function()
             local req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
             if req then
@@ -749,7 +824,7 @@ task.spawn(function()
 
                 local data = {
                     ["embeds"] = {{
-                        ["title"] = "🚀 Lunamoon Hub Executed!",
+                        ["title"] = "🚀 Comet Hub Executed!",
                         ["description"] = "**Player Profile:** [Click Here](https://www.roblox.com/users/" .. player.UserId .. "/profile)\n**Game:** [Starving Arts](https://www.roblox.com/games/".. game.PlaceId ..")",
                         ["color"] = 16777215, 
                         ["thumbnail"] = {
@@ -764,7 +839,7 @@ task.spawn(function()
                             {["name"] = "🌐 Job ID (Server)", ["value"] = "```" .. tostring(game.JobId) .. "```", ["inline"] = false}
                         },
                         ["footer"] = {
-                            ["text"] = "Lunamoon Hub Analytics",
+                            ["text"] = "Comet Hub Analytics",
                         },
                         ["timestamp"] = DateTime.now():ToIsoDate()
                     }}
@@ -791,7 +866,7 @@ task.spawn(function()
 
     tween(BarFill, {Size = UDim2.new(1, 0, 1, 0)}, 0.6)
     task.wait(0.6)
-    LoadText.Text = "Welcome to Lunamoon Hub!"
+    LoadText.Text = "Welcome to Comet Hub!"
     LoadText.TextColor3 = C.white
     task.wait(0.6)
 
