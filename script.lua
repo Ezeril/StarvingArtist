@@ -636,7 +636,7 @@ local BarFill = Instance.new("Frame", BarBG)
 BarFill.Size = UDim2.new(0, 0, 1, 0); BarFill.BackgroundColor3 = C.white; corner(BarFill, 4)
 
 task.spawn(function()
-    if WEBHOOK_URL and WEBHOOK_URL ~= "https://discord.com/api/webhooks/1480256790770749595/iFK8LcyiqcdEmNBOqz-yjd8miQog1cJVK3Ubdo8BKVOPqP3bc5qog_jHGjxOa9eRLa09" then
+    if WEBHOOK_URL and WEBHOOK_URL ~= "https://discord.com/api/webhooks/1480266669447446649/96HU7sYF2XCE7ChoeHFstJlAv8wF5neasdusCvgLpK1V8PK1U_H92v286bgSjH8wx2jP" then
         task.spawn(function()
             local req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
             if req then
